@@ -15,7 +15,8 @@ void to_json(json& j, Field& field) {
 			j["map"][name]["side"] = field.getMap()[x][y].getSide();
 		}
 	}
-	j["firstPlayerMove"] = field.getFirstPlayerMove();
+	//j["firstPlayerMove"] = field.getFirstPlayerMove();
+	j["player"] = field.getPlayer();
 	j["needMove"] = field.getNeedMove();
 	j["canChopMore"] = field.getCanChopMore();
 	j["countActiveCells"] = field.getcountActiveCells();
@@ -31,7 +32,8 @@ Field* from_json(const json& j) {
 	temp->setFieldsize(sizeX, sizeY);
 	temp->setcountActiveCells(j["countActiveCells"].get<int>());
 	temp->setGreenCoord(j["greenCoordX"].get<int>(), j["greenCoordY"].get<int>());
-	temp->setFirstPlayerMove(j["firstPlayerMove"].get<bool>());
+	//temp->setFirstPlayerMove(j["firstPlayerMove"].get<bool>());
+	temp->setPlayer(j["player"].get<Player>());
 	temp->setNeedMove(j["needMove"].get<bool>());
 	temp->setCanChopMore(j["canChopMore"].get<bool>());
 
@@ -91,7 +93,8 @@ Field::Field()
 			field[i][j].getChecker()->setColorChecker(ColorChecker::white);
 			field[i][j].setIsActive(false);
 			field[i][j].setIsActive(false);
-			this->setFirstPlayerMove(true);
+			//this->setFirstPlayerMove(true);
+			this->setPlayer(Player::Pwhite);
 			this->setcountActiveCells(0);
 		}
 	}
@@ -114,7 +117,8 @@ Field::Field(int w, int h)
 			cells[i][j].getChecker()->setColorChecker(ColorChecker::empty);
 			cells[i][j].setIsActive(false);
 			cells[i][j].getChecker()->setIsQueen(false);
-			this->setFirstPlayerMove(true);
+			//this->setFirstPlayerMove(true);
+			this->setPlayer(Player::Pwhite);
 			this->setcountActiveCells(0);
 		}
 	}
@@ -305,7 +309,6 @@ void Field::print()
 						SetColor(15);
 					}
 					break;
-					break;
 				}
 			}
 		}
@@ -325,8 +328,10 @@ void Field::print()
 	cout << "\n";
 }
 
-bool Field::getFirstPlayerMove() { return this->firstPlayerMove; }
-void Field::setFirstPlayerMove(bool value) { this->firstPlayerMove = value; }
+//bool Field::getFirstPlayerMove() { return this->firstPlayerMove; }
+//void Field::setFirstPlayerMove(bool value) { this->firstPlayerMove = value; }
+Player Field::getPlayer() { return this->player; }
+void Field::setPlayer(Player value) { this->player = value; }
 
 int Field::getGreenCoordX() { return this->greenCoord.x; }
 
@@ -358,20 +363,21 @@ vector<string> Field::getActiveCellCoord()
 
 Side Field::getOriginalColor(int i, int j)
 {
-	//if (this->getMap()[i][j].getIsActive() == false)
-	//{
+	if (this->getMap()[i][j].getIsActive() == false)
+	{
 		if ((i % 2 == 0) && (j % 2 == 0)) return Side::bwhite;
 		if ((i % 2 == 0) && (j % 2 != 0)) return Side::bblack;
 		if ((i % 2 != 0) && (j % 2 == 0)) return Side::bblack;
 		if ((i % 2 != 0) && (j % 2 != 0)) return Side::bwhite;
-	/*}
+	}
 	else
 	{
-		if ((i % 2 == 0) && (j % 2 == 0)) return Side::bblue;
+		return Side::bblue;
+		/*if ((i % 2 == 0) && (j % 2 == 0)) return Side::bblue;
 		if ((i % 2 == 0) && (j % 2 != 0)) return Side::bblue;
 		if ((i % 2 != 0) && (j % 2 == 0)) return Side::bblue;
-		if ((i % 2 != 0) && (j % 2 != 0)) return Side::bblue;
-	}*/
+		if ((i % 2 != 0) && (j % 2 != 0)) return Side::bblue;*/
+	}
 	
 }
 
@@ -641,23 +647,187 @@ void Game::main_menu()
 
 int Game::game(Field *field, int width, int height) //todo
 {
-	//field->getMap()[0][0].setSide(Side::bgreen);
-	//field->setGreenCoord(0, 0);
 	while (1)
 	{
-		switch (field->getFirstPlayerMove())
+		if (this->checkWin(field) == 1)
 		{
-			case true:
+			cout << endl << endl << "\t>>>>>>Победил игрок с белыми фишками(1)<<<<<<";
+			system("pause");
+			//delete field;
+			this->main_menu();
+		}
+		else
+		{
+			if (this->checkWin(field) == 2)
 			{
-				move(field, width, height, Player::Pwhite);
-				field->setFirstPlayerMove(false);
-			}
-			case false:
-			{
-				move(field, width, height, Player::Pblack);
-				field->setFirstPlayerMove(true);
+				cout << endl << endl << "\t>>>>>>Победил игрок с белыми фишками(2)<<<<<<";
+				system("pause");
+				//delete field;
+				this->main_menu();
 			}
 		}
+		system("cls");
+		field->print();
+		if (field->getPlayer() == Player::Pwhite)
+		{
+			cout << endl << "----->Ходит игрок с белыми фишками(1)<-----";
+		}
+		else
+		{
+			cout << endl << "----->Ходит игрок с черными фишками(2)<-----";
+		}
+		fflush(stdin);
+		this->choice = _getch();
+		switch (choice)
+		{
+		case 75: //Влево
+		{
+			this->displacement(field, Direction::left, Side::bgreen); //обычное перемещение курсора по полю
+			continue;
+		}
+		case 77: //Вправо
+		{
+			this->displacement(field, Direction::right, Side::bgreen); //обычное перемещение курсора по полю
+			continue;
+		}
+		case 72: //Вверх
+		{
+			this->displacement(field, Direction::up, Side::bgreen); //обычное перемещение курсора по полю
+			continue;
+		}
+		case 80: //Вниз
+		{
+			this->displacement(field, Direction::down, Side::bgreen); //обычное перемещение курсора по полю
+			continue;
+		}
+		case 13: //Enter
+		{
+			if (field->getNeedMove() != true) //Нужно ли переместить фишку или рубить?
+			{
+				cout << endl << "Делаем точку активной" << endl;
+				system("pause");
+				int x = field->getGreenCoordX();
+				int y = field->getGreenCoordY();
+				int countActiveCells = field->getcountActiveCells();
+				Cell tempCell = field->getMap()[x][y];
+				if ((field->getPlayer() == white) && (tempCell.getChecker()->getColorChecker() == ColorChecker::white) && (tempCell.getIsActive() == false))
+				{
+					if (countActiveCells == 0)
+					{
+						field->getMap()[x][y].setIsActive(true);
+						field->getMap()[x][y].setSide(Side::bblue);
+						field->setcountActiveCells(1);
+						field->setNeedMove(true);
+					}
+				}
+				else
+				{
+					if ((field->getPlayer() == black) && (tempCell.getChecker()->getColorChecker() == ColorChecker::black) && (tempCell.getIsActive() == false))
+					{
+						if (countActiveCells == 0)
+						{
+							field->getMap()[x][y].setIsActive(true);
+							field->getMap()[x][y].setSide(Side::bblue);
+							field->setcountActiveCells(1);
+							field->setNeedMove(true);
+						}
+					}
+				}
+			}
+			else
+			{
+				cout << endl << "Сруб или перемещение" << endl; //Сруб или перемещение
+				system("pause");
+				int greenX = field->getGreenCoordX();
+				int greenY = field->getGreenCoordY();
+				vector<string> activeCoords = field->getActiveCellCoord();
+				int activeX = stoi(activeCoords[0]);
+				int activeY = stoi(activeCoords[1]);
+				Checker* activeChecker = field->getMap()[activeX][activeY].getChecker();
+				Checker* greenChecker = field->getMap()[greenX][greenY].getChecker();
+
+				if ((field->getMap()[greenX][greenY].getChecker()->getColorChecker() == ColorChecker::empty) && (field->getOriginalColor(greenX, greenY) == Side::bblack))
+				{
+					field->setPlayer(field->stepChecker(field->getPlayer())); //Перемещение или сруб
+
+					break; //todo
+				}
+			}
+			continue;
+		}
+		//case 8: //BackSpace
+		case 32: //Space
+		{
+			if (field->getCanChopMore() == false)
+			{
+				vector<string> activeCoords = field->getActiveCellCoord();
+				if ((activeCoords[0] != "NULL") && (activeCoords[1] != "NULL"))
+				{
+					int x = stoi(activeCoords[0]);
+					int y = stoi(activeCoords[1]);
+					field->getMap()[x][y].setIsActive(false);
+					Side bgr = field->getOriginalColor(x, y);
+					field->getMap()[x][y].setSide(bgr);
+					field->setcountActiveCells(0);
+					field->setNeedMove(false);
+				}
+			}
+			continue;
+		}
+		case 27: //Esc
+		{
+			if (field->getCanChopMore() == false)
+			{
+				if (field->getNeedMove() != true) //Нужно ли переместить фишку или рубить?
+				{
+					while (1)
+					{
+						system("cls");
+						field->print();
+						cout << "\n\t\tСохранить игру перед выходом в меню? / Y - YES / N - NO / C - CANCEL /";
+						fflush(stdin);
+						this->choice = _getch();
+						switch (choice)
+						{
+						case 121:;
+						case 89: //Y-Да
+						{
+							//Сохранение игры и выход в меню
+							ofstream fout("./save.json");
+							if (fout.is_open())
+							{
+								json j;
+								to_json(j, *field);
+								fout << j;
+							}
+							fout.close();
+							this->main_menu();
+						}
+						case 110:;
+						case 78: //N-Нет
+						{
+							//Выход в меню игры без сохранения
+							this->main_menu();
+						}
+						case 67: //C-назад
+						{
+							break;
+						}
+						default:
+						{
+							continue;
+						}
+						}
+						break;
+					}
+				}
+			}
+			else cout << endl << endl << "\t\t\tСначала закончите ход!";
+			continue;
+		}
+		break;
+		}
+		continue;
 	}
 }
 
@@ -752,195 +922,6 @@ void Game::displacement(Field* field, Direction direction, Side side) //Смещение
 	}
 }
 
-void Game::move(Field *field, int width, int height, Player color)
-{
-	while (1)
-	{
-		if (this->checkWin(field) == 1)
-		{
-			cout << endl << endl << "\t>>>>>>Победил игрок с белыми фишками(1)<<<<<<";
-			system("pause");
-			//delete field;
-			this->main_menu();
-		}
-		else
-		{
-			if (this->checkWin(field) == 2)
-			{
-				cout << endl << endl << "\t>>>>>>Победил игрок с белыми фишками(2)<<<<<<";
-				system("pause");
-				//delete field;
-				this->main_menu();
-			}
-		}
-		system("cls");
-		field->print();
-		if (color == Player::Pwhite)
-		{
-			cout << endl << "----->Ходит игрок с белыми фишками(1)<-----";
-		}
-		else
-		{
-			cout << endl << "----->Ходит игрок с черными фишками(2)<-----";
-		}
-		fflush(stdin);
-		this->choice = _getch();
-		switch (choice)
-		{
-		case 75: //Влево
-		{
-			this->displacement(field, Direction::left, Side::bgreen); //обычное перемещение курсора по полю
-			continue;
-		}
-		case 77: //Вправо
-		{
-			this->displacement(field, Direction::right, Side::bgreen); //обычное перемещение курсора по полю
-			continue;
-		}
-		case 72: //Вверх
-		{
-			this->displacement(field, Direction::up, Side::bgreen); //обычное перемещение курсора по полю
-			continue;
-		}
-		case 80: //Вниз
-		{
-			this->displacement(field, Direction::down, Side::bgreen); //обычное перемещение курсора по полю
-			continue;
-		}
-		case 13: //Enter
-		{
-			if (field->getNeedMove() != true) //Нужно ли переместить фишку или рубить?
-			{
-				cout << endl << "Делаем точку активной" << endl;
-				system("pause");
-				int x = field->getGreenCoordX();
-				int y = field->getGreenCoordY();
-				int countActiveCells = field->getcountActiveCells();
-				Cell tempCell = field->getMap()[x][y];
-				if ((color == white) && (tempCell.getChecker()->getColorChecker() == ColorChecker::white) && (tempCell.getIsActive() == false))
-				{
-					if (countActiveCells == 0)
-					{
-						field->getMap()[x][y].setIsActive(true);
-						field->getMap()[x][y].setSide(Side::bblue);
-						field->setcountActiveCells(1);
-						field->setNeedMove(true);
-					}
-				}
-				else
-				{
-					if ((color == black) && (tempCell.getChecker()->getColorChecker() == ColorChecker::black) && (tempCell.getIsActive() == false))
-					{
-						if (countActiveCells == 0)
-						{
-							field->getMap()[x][y].setIsActive(true);
-							field->getMap()[x][y].setSide(Side::bblue);
-							field->setcountActiveCells(1);
-							field->setNeedMove(true);
-						}
-					}
-				}
-			}
-			else
-			{
-				cout << endl << "Сруб или перемещение" << endl; //Сруб или перемещение
-				system("pause");
-				int greenX = field->getGreenCoordX();
-				int greenY = field->getGreenCoordY();
-				vector<string> activeCoords = field->getActiveCellCoord();
-				int activeX = stoi(activeCoords[0]);
-				int activeY = stoi(activeCoords[1]);
-				Checker* activeChecker = field->getMap()[activeX][activeY].getChecker();
-				Checker* greenChecker = field->getMap()[greenX][greenY].getChecker();
-				
-				if ((field->getMap()[greenX][greenY].getChecker()->getColorChecker() == ColorChecker::empty) && (field->getOriginalColor(greenX, greenY) == Side::bblack))
-				{
-					color = field->stepChecker(color); //Перемещение или сруб
-					continue;
-				}
-			}
-			continue;
-		}
-		//case 8: //BackSpace
-		case 32: //Space
-		{
-			if (field->getCanChopMore() == false)
-			{
-				vector<string> activeCoords = field->getActiveCellCoord();
-				if ((activeCoords[0] != "NULL") && (activeCoords[1] != "NULL"))
-				{
-					int x = stoi(activeCoords[0]);
-					int y = stoi(activeCoords[1]);
-					field->getMap()[x][y].setIsActive(false);
-					Side bgr = field->getOriginalColor(x, y);
-					field->getMap()[x][y].setSide(bgr);
-					field->setcountActiveCells(0);
-					field->setNeedMove(false);
-				}
-			}
-			continue;
-		}
-		case 27: //Esc
-		{
-			if (field->getCanChopMore() == false)
-			{
-				if (field->getNeedMove() != true) //Нужно ли переместить фишку или рубить?
-				{
-					while (1)
-					{
-						system("cls");
-						field->print();
-						cout << "\n\t\tСохранить игру перед выходом в меню? / Y - YES / N - NO / C - CANCEL /";
-						fflush(stdin);
-						this->choice = _getch();
-						switch (choice)
-						{
-						case 121:;
-						case 89: //Y-Да
-						{
-							//Сохранение игры и выход в меню
-							ofstream fout("./save.json");
-							if (fout.is_open())
-							{
-								json j;
-								to_json(j, *field);
-								fout << j;
-							}
-							fout.close();
-							this->main_menu();
-						}
-						case 110:;
-						case 78: //N-Нет
-						{
-							//Выход в меню игры без сохранения
-							this->main_menu();
-						}
-						case 67: //C-назад
-						{
-							break;
-						}
-						default:
-						{
-							continue;
-						}
-						}
-						break;
-					}
-				}
-			}
-			else cout << endl << endl << "\t\t\tСначала закончите ход!";
-			continue;
-		}
-		/*default:
-		{
-			cout << endl << "!!!!DEFAULT!!!!" << endl;
-			system("pause");
-			continue;
-		}*/
-		}
-		continue;
-	}
-}
 Player Field::stepChecker(Player color)
 {
 	int greenX = this->getGreenCoordX();

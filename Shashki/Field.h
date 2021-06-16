@@ -38,28 +38,14 @@ enum ColorChecker { empty, white, black };
 struct Point { int x, y; };
 struct GreenCoord { int x, y; };
 
-/*struct Data
-{
-	int count;
-	int* FistPlayerX;
-	int* FirstPlayerY;
-	bool* FPisQuin;
-	int* SecondPlayerX;
-	int* SecondPLayerY;
-	bool* SPisQuin;
-};*/
-
 class Checker
 {
 private:
 	bool isQueen;
-	//Point point;
 	ColorChecker color;
 public:
 	~Checker();
 	bool getIsQueen() { return this->isQueen; }
-	//int getPointX() { return this->point.x; }
-	//int getPointY() { return this->point.y; }
 	ColorChecker getColorChecker() { return this->color; }
 	void setColorChecker(ColorChecker color);
 	void setIsQueen(bool isQueen);
@@ -86,7 +72,8 @@ public:
 class Field
 {
 private:
-	bool firstPlayerMove;
+	//bool firstPlayerMove = true;
+	Player player;
 	int width;
 	int height;
 	Cell** map;
@@ -112,8 +99,10 @@ public:
 	}
 	int getSizeWidth() { return this->width; }
 	int getSizeHeight() { return this->height; }
-	bool getFirstPlayerMove();
-	void setFirstPlayerMove(bool value);
+	Player getPlayer();
+	void setPlayer(Player value);
+	//bool getFirstPlayerMove();
+	//void setFirstPlayerMove(bool value);
 	int getGreenCoordX();
 	int getGreenCoordY();
 	void setGreenCoord(int x, int y);
