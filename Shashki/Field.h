@@ -36,6 +36,7 @@ enum Player { Pwhite = 1, Pblack };
 enum Side { bwhite, bblack, bgreen, bblue, bred };
 enum ColorChecker { empty, white, black };
 struct Point { int x, y; };
+struct CoordChopQueen { int x, y; };
 struct GreenCoord { int x, y; };
 
 class Checker
@@ -72,7 +73,6 @@ public:
 class Field
 {
 private:
-	//bool firstPlayerMove = true;
 	Player player;
 	int width;
 	int height;
@@ -101,8 +101,6 @@ public:
 	int getSizeHeight() { return this->height; }
 	Player getPlayer();
 	void setPlayer(Player value);
-	//bool getFirstPlayerMove();
-	//void setFirstPlayerMove(bool value);
 	int getGreenCoordX();
 	int getGreenCoordY();
 	void setGreenCoord(int x, int y);
@@ -111,7 +109,7 @@ public:
 	void clearMap();
 	void deleteChecker(int x, int y);
 	void addChecker(int x, int y, ColorChecker color, bool isQuin);
-	Player stepChecker(Player color);
+	Player stepChecker();
 	void swapCells(int activeX, int activeY, int greenX, int greenY, Checker* activeChecker, Checker* greenChecker);
 	bool getNeedMove() { return this->needMove; }
 	void setNeedMove(bool value);
@@ -120,7 +118,7 @@ public:
 	Point coordChop(Player player, int activeX, int activeY, int greenX, int greenY);
 	void defaultChop(Player player, int activeX, int activeY, int greenX, int greenY, Checker* activeChecker, Checker* greenChecker);
 	bool needMoreChop(Player player, int activeX, int activeY, bool isQuin = false);
-	int stepQuin(Player player, int activeX, int activeY, int greenX, int greenY);
+	CoordChopQueen coordsEnemyCheckerForQueen(int activeX, int activeY, int greenX, int greenY);
 };
 
 class Game

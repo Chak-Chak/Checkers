@@ -651,18 +651,16 @@ int Game::game(Field *field, int width, int height) //todo
 	{
 		if (this->checkWin(field) == 1)
 		{
-			cout << endl << endl << "\t>>>>>>Победил игрок с белыми фишками(1)<<<<<<";
+			cout << endl << endl << "\t>>>>>>Победил игрок с белыми фишками(1)<<<<<<" << endl;
 			system("pause");
-			//delete field;
 			this->main_menu();
 		}
 		else
 		{
 			if (this->checkWin(field) == 2)
 			{
-				cout << endl << endl << "\t>>>>>>Победил игрок с белыми фишками(2)<<<<<<";
+				cout << endl << endl << "\t>>>>>>Победил игрок с белыми фишками(2)<<<<<<" << endl;
 				system("pause");
-				//delete field;
 				this->main_menu();
 			}
 		}
@@ -704,8 +702,7 @@ int Game::game(Field *field, int width, int height) //todo
 		{
 			if (field->getNeedMove() != true) //Нужно ли переместить фишку или рубить?
 			{
-				cout << endl << "Делаем точку активной" << endl;
-				system("pause");
+				//Делаем точку активной
 				int x = field->getGreenCoordX();
 				int y = field->getGreenCoordY();
 				int countActiveCells = field->getcountActiveCells();
@@ -736,8 +733,7 @@ int Game::game(Field *field, int width, int height) //todo
 			}
 			else
 			{
-				cout << endl << "Сруб или перемещение" << endl; //Сруб или перемещение
-				system("pause");
+				//Сруб или перемещение
 				int greenX = field->getGreenCoordX();
 				int greenY = field->getGreenCoordY();
 				vector<string> activeCoords = field->getActiveCellCoord();
@@ -748,14 +744,13 @@ int Game::game(Field *field, int width, int height) //todo
 
 				if ((field->getMap()[greenX][greenY].getChecker()->getColorChecker() == ColorChecker::empty) && (field->getOriginalColor(greenX, greenY) == Side::bblack))
 				{
-					field->setPlayer(field->stepChecker(field->getPlayer())); //Перемещение или сруб
+					field->setPlayer(field->stepChecker()); //Перемещение или сруб
 
-					break; //todo
+					continue; //todo
 				}
 			}
 			continue;
 		}
-		//case 8: //BackSpace
 		case 32: //Space
 		{
 			if (field->getCanChopMore() == false)
@@ -922,8 +917,9 @@ void Game::displacement(Field* field, Direction direction, Side side) //Смещение
 	}
 }
 
-Player Field::stepChecker(Player color)
+Player Field::stepChecker()
 {
+	Player color = this->getPlayer();
 	int greenX = this->getGreenCoordX();
 	int greenY = this->getGreenCoordY();
 	vector<string> activeCoords = this->getActiveCellCoord();
@@ -933,7 +929,9 @@ Player Field::stepChecker(Player color)
 	Checker* greenChecker = this->getMap()[greenX][greenY].getChecker();
 	if (activeChecker->getIsQueen() == true) //Если шашка - дамка
 	{
-		if ((abs(greenX - activeX) > 0) && (abs(greenX - activeX) == abs(greenY - activeY))) //Обычное перемещение
+		CoordChopQueen chopChecker = this->coordsEnemyCheckerForQueen(activeX, activeY, greenX, greenY);
+		if ((abs(greenX - activeX) > 0) && (abs(greenX - activeX) == abs(greenY - activeY))
+			&& ((chopChecker.x == -1) && (chopChecker.y == -1)) && (this->getCanChopMore() == false)) //Обычное перемещение
 		{
 			this->swapCells(activeX, activeY, greenX, greenY, activeChecker, greenChecker);
 			if (color == Player::Pwhite) { color = Player::Pblack; }
@@ -941,11 +939,34 @@ Player Field::stepChecker(Player color)
 			this->setNeedMove(false);
 			return color;
 		}
+		else
+		{
+			if ((abs(abs(greenX) - abs(activeX)) > 0) && (abs(abs(greenX) - abs(activeX)) == abs(abs(greenY) - abs(activeY))) && ((chopChecker.x != -1) && (chopChecker.y != -1) && (chopChecker.x != -2) && (chopChecker.y != -2))) //Сруб
+			{
+				this->getMap()[chopChecker.x][chopChecker.y].getChecker()->setEmptyChecker();
+
+				this->swapCells(activeX, activeY, greenX, greenY, activeChecker, greenChecker);
+				if (this->needMoreChop(color, greenX, greenY))
+				{
+					this->getMap()[greenX][greenY].setIsActive(true);
+					this->setcountActiveCells(1);
+					this->canChopMore = true;
+					return color;
+				}
+				else
+				{
+					this->needMove = false;
+					this->canChopMore = false;
+					if (color == Player::Pwhite) color = Player::Pblack;
+					else color = Player::Pwhite;
+					return color;
+				}
+			}
+		}
 	}
 	else //Если обычная шашка
 	{
-		//this->defaultChop(field, color, activeX, activeY, greenX, greenY, activeChecker, greenChecker);
-		if ((abs(activeX - greenX) == abs(activeY - greenY)) && abs(activeX - greenX) == 1) //Обычное перемещение
+		if ((abs(activeX - greenX) == abs(activeY - greenY)) && (abs(activeX - greenX) == 1) && (this->getCanChopMore() == false)) //Обычное перемещение
 		{
 			if (((color == Player::Pwhite) && (greenX > activeX)) || ((color == Player::Pblack) && (greenX < activeX)))
 			{
@@ -966,7 +987,7 @@ Player Field::stepChecker(Player color)
 					(((color == Player::Pwhite) && (this->getMap()[chopChecker.x][chopChecker.y].getChecker()->getColorChecker() == ColorChecker::black)) || 
 						((color == Player::Pblack) && (this->getMap()[chopChecker.x][chopChecker.y].getChecker()->getColorChecker() == ColorChecker::white))))
 				{
-					//this->getMap()[chopChecker.x][chopChecker.y].getChecker()->setColorChecker(ColorChecker::empty); //Опустошение данных у срубленной ячейки
+					//Опустошение данных у срубленной ячейки
 					this->getMap()[chopChecker.x][chopChecker.y].getChecker()->setEmptyChecker();
 
 					this->swapCells(activeX, activeY, greenX, greenY, activeChecker, greenChecker);
@@ -989,72 +1010,40 @@ Player Field::stepChecker(Player color)
 				}
 			}
 		}
-		return color;
 	}
+	return color;
 }
 
 Point Field::coordChop(Player player, int activeX, int activeY, int greenX, int greenY)
 {
 	Checker* activeChecker = this->getMap()[activeX][activeY].getChecker();
-	if (this->getMap()[activeX][activeY].getChecker()->getIsQueen()) //Если дамка
+	
+	if (((greenX > activeX) && (greenY > activeY)) && (activeChecker->getColorChecker() != this->getMap()[activeX + 1][activeY + 1].getChecker()->getColorChecker()))
 	{
-		int countEnemyChecker = 0;
-		int countFriendlyChecker = 0;
-
-		if (((greenX > activeX) && (greenY > activeY)) && (activeChecker->getColorChecker() != this->getMap()[activeX + 1][activeY + 1].getChecker()->getColorChecker()))
-		{
-			return Point{ activeX + 1, activeY + 1 };
-		}
-		else
-		{
-			if (((greenX > activeX) && (greenY < activeY)) && (activeChecker->getColorChecker() != this->getMap()[activeX + 1][activeY - 1].getChecker()->getColorChecker()))
-			{
-				return Point{ activeX + 1, activeY - 1 };
-			}
-			else
-			{
-				if (((greenX < activeX) && (greenY < activeY)) && (activeChecker->getColorChecker() != this->getMap()[activeX - 1][activeY - 1].getChecker()->getColorChecker()))
-				{
-					return Point{ activeX - 1, activeY - 1 };
-				}
-				else
-				{
-					if (((greenX < activeX) && (greenY > activeY)) && (activeChecker->getColorChecker() != this->getMap()[activeX - 1][activeY + 1].getChecker()->getColorChecker()))
-					{
-						return Point{ activeX + -1, activeY + 1 };
-					}
-				}
-			}
-		}
+		return Point { activeX + 1, activeY + 1 };
 	}
 	else
 	{
-		if (((greenX > activeX) && (greenY > activeY)) && (activeChecker->getColorChecker() != this->getMap()[activeX + 1][activeY + 1].getChecker()->getColorChecker()))
+		if (((greenX > activeX) && (greenY < activeY)) && (activeChecker->getColorChecker() != this->getMap()[activeX + 1][activeY - 1].getChecker()->getColorChecker()))
 		{
-			return Point { activeX + 1, activeY + 1 };
+			return Point{ activeX + 1, activeY - 1 };
 		}
 		else
 		{
-			if (((greenX > activeX) && (greenY < activeY)) && (activeChecker->getColorChecker() != this->getMap()[activeX + 1][activeY - 1].getChecker()->getColorChecker()))
+			if (((greenX < activeX) && (greenY < activeY)) && (activeChecker->getColorChecker() != this->getMap()[activeX - 1][activeY - 1].getChecker()->getColorChecker()))
 			{
-				return Point{ activeX + 1, activeY - 1 };
+				return Point{ activeX - 1, activeY - 1 };
 			}
 			else
 			{
-				if (((greenX < activeX) && (greenY < activeY)) && (activeChecker->getColorChecker() != this->getMap()[activeX - 1][activeY - 1].getChecker()->getColorChecker()))
+				if (((greenX < activeX) && (greenY > activeY)) && (activeChecker->getColorChecker() != this->getMap()[activeX - 1][activeY + 1].getChecker()->getColorChecker()))
 				{
-					return Point{ activeX - 1, activeY - 1 };
-				}
-				else
-				{
-					if (((greenX < activeX) && (greenY > activeY)) && (activeChecker->getColorChecker() != this->getMap()[activeX - 1][activeY + 1].getChecker()->getColorChecker()))
-					{
-						return Point{ activeX +- 1, activeY + 1 };
-					}
+					return Point{ activeX - 1, activeY + 1 };
 				}
 			}
 		}
 	}
+	
 	return Point{ NULL, NULL };
 }
 
@@ -1067,62 +1056,6 @@ void Field::swapCells(int activeX, int activeY, int greenX, int greenY, Checker*
 	this->setcountActiveCells(0);
 	this->setNeedMove(true);
 }
-
-/*void Field::defaultChop(Player player, int activeX, int activeY, int greenX, int greenY, Checker* activeChecker, Checker* greenChecker)
-{
-	if (player == Player::Pwhite)
-	{
-		if ((greenX == activeX + 1) && ((greenY == activeY + 1) || (greenY == activeY - 1)))
-		{
-			this->swapCells(activeX, activeY, greenX, greenY, activeChecker, greenChecker);
-			if (player == Player::Pwhite) { player = Player::Pblack; }
-			else { if (player == Player::Pblack) { player = Player::Pwhite; } }
-		}
-		else
-		{
-			if ((abs(greenX - activeX) == 2) && (abs(greenY - activeY) == 2))
-			{
-				Point chopChecker = this->coordChop(player, activeX, activeY, greenX, greenY);
-				if (((chopChecker.x != NULL) || (chopChecker.y != NULL)) && (this->getMap()[chopChecker.x][chopChecker.y].getChecker()->getColorChecker() == ColorChecker::black))
-				{
-					this->getMap()[chopChecker.x][chopChecker.y].setChecker(this->getMap()[0][0].getChecker());
-					this->swapCells(activeX, activeY, greenX, greenY, activeChecker, greenChecker);
-					if (this->needMoreChop(player, greenX, greenY))
-					{
-						this->getMap()[greenX][greenY].setIsActive(true);
-					}
-					else this->needMove = false;
-				}
-			}
-		}
-	}
-	else
-	{
-		if ((greenX == activeX - 1) && ((greenY == activeY + 1) || (greenY == activeY - 1)))
-		{
-			this->swapCells(activeX, activeY, greenX, greenY, activeChecker, greenChecker);
-			if (player == Player::Pwhite) { player = Player::Pblack; }
-			else { if (player == Player::Pblack) { player = Player::Pwhite; } }
-		}
-		else
-		{
-			if ((abs(greenX - activeX) == 2) && (abs(greenY - activeY) == 2))
-			{
-				Point chopChecker = this->coordChop(player, activeX, activeY, greenX, greenY);
-				if (((chopChecker.x != NULL) || (chopChecker.y != NULL)) && (this->getMap()[chopChecker.x][chopChecker.y].getChecker()->getColorChecker() == ColorChecker::white))
-				{
-					this->getMap()[chopChecker.x][chopChecker.y].setChecker(this->getMap()[0][0].getChecker());
-					this->swapCells(activeX, activeY, greenX, greenY, activeChecker, greenChecker);
-					if (this->needMoreChop(player, greenX, greenY))
-					{
-						this->getMap()[greenX][greenY].setIsActive(true);
-					}
-					else this->needMove = false;
-				}
-			}
-		}
-	}
-}*/
 
 bool Field::needMoreChop(Player player, int greenX, int greenY, bool isQuin)
 {
@@ -1210,11 +1143,6 @@ bool Field::needMoreChop(Player player, int greenX, int greenY, bool isQuin)
 	}
 }
 
-int Field::stepQuin(Player player, int activeX, int activeY, int greenX, int greenY) //todo
-{
-	return 0;
-}
-
 void Field::setCanChopMore(bool value) { this->canChopMore = value; }
 void Field::setNeedMove(bool value) { this->needMove = value; }
 
@@ -1241,4 +1169,94 @@ int Game::checkWin(Field* field)
 		return 1;
 	}
 	return 0;
+}
+CoordChopQueen Field::coordsEnemyCheckerForQueen(int activeX, int activeY, int greenX, int greenY)
+{
+	CoordChopQueen coordsChop = { -1, -1 };
+	Player player = this->getPlayer();
+	Checker* activeChecker = this->getMap()[activeX][activeY].getChecker();
+	int countEnemyChecker = 0;
+	if (((greenX > activeX) && (greenY > activeY)))
+	{
+		for (int x = activeX + 1, y = activeY + 1; (x < greenX) && (y < greenY); x++, y++)
+		{
+			if (((player == Player::Pwhite) && (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::white)) ||					//Если нашлась союзная шашка, прекращаем 
+				((player == Player::Pblack) && (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::black)))
+			{
+				return CoordChopQueen{ -2, -2 };
+			}																																		//поиск в этом направлении
+			if (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::empty) continue;												//Если ячейка пуста, пропускаем её
+			if (((player == Player::Pwhite) && (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::black)) ||					//Если нашлась вражеская шашка
+				((player == Player::Pblack) && (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::white)))
+			{
+				countEnemyChecker++;
+				coordsChop.x = x;
+				coordsChop.y = y;
+			}
+		}
+	}
+	if (((greenX < activeX) && (greenY < activeY)))
+	{
+		for (int x = activeX - 1, y = activeY - 1; (greenX <= x) && (greenY <= y); x--, y--)
+		{
+			if (((player == Player::Pwhite) && (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::white)) ||					//Если нашлась союзная шашка, прекращаем 
+				((player == Player::Pblack) && (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::black)))
+			{
+				return CoordChopQueen{ -2, -2 };
+			}																																		//поиск в этом направлении
+			if (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::empty) continue;												//Если ячейка пуста, пропускаем её
+			if (((player == Player::Pwhite) && (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::black)) ||					//Если нашлась вражеская шашка
+				((player == Player::Pblack) && (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::white)))
+			{
+				countEnemyChecker++;
+				coordsChop.x = x;
+				coordsChop.y = y;
+			}
+		}
+	}
+	if (((greenX > activeX) && (greenY < activeY)))
+	{
+		for (int x = activeX + 1, y = activeY - 1; (x < greenX) && (greenX <= y); x++, y--)
+		{
+			if (((player == Player::Pwhite) && (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::white)) ||					//Если нашлась союзная шашка, прекращаем 
+				((player == Player::Pblack) && (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::black)))
+			{
+				return CoordChopQueen{ -2, -2 };
+			}																																		//поиск в этом направлении
+			if (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::empty) continue;												//Если ячейка пуста, пропускаем её
+			if (((player == Player::Pwhite) && (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::black)) ||					//Если нашлась вражеская шашка
+				((player == Player::Pblack) && (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::white)))
+			{
+				countEnemyChecker++;
+				coordsChop.x = x;
+				coordsChop.y = y;
+			}
+		}
+	}
+	if (((greenX < activeX) && (greenY > activeY)))
+	{
+		for (int x = activeX - 1, y = activeY + 1; (greenX <= x) && (y < greenY); x--, y++)
+		{
+			if (((player == Player::Pwhite) && (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::white)) ||					//Если нашлась союзная шашка, прекращаем 
+				((player == Player::Pblack) && (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::black)))
+			{
+				return CoordChopQueen{ -2, -2 };
+			}																																		//поиск в этом направлении
+			if (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::empty) continue;												//Если ячейка пуста, пропускаем её
+			if (((player == Player::Pwhite) && (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::black)) ||					//Если нашлась вражеская шашка
+				((player == Player::Pblack) && (this->getMap()[x][y].getChecker()->getColorChecker() == ColorChecker::white)))
+			{
+				countEnemyChecker++;
+				coordsChop.x = x;
+				coordsChop.y = y;
+			}
+		}
+	}
+	if (countEnemyChecker == 0) return CoordChopQueen{ -1, -1 }; //Означает обычный ход
+	else
+	{
+		if (countEnemyChecker == 1) return coordsChop;	//Передача координат шашки для сруба
+		else return CoordChopQueen{ -2, -2 };	//Означает, что нельзя ни сходить, ни срубить (т.е. ошибка)
+	}
+
 }
